@@ -1,0 +1,22 @@
+# Создаем разделы sdb1 sdc1 типа fd
+fdisk /dev/sdb
+fdisk /dev/sdc
+mdadm --zero-superblock --force /dev/sd{b1,c1}
+mdadm --create --verbose /dev/md0 -l 1 -n 2 /dev/sd{b1,c1}
+mkfs.xfs /dev/md0
+mount /dev/md0 /mnt
+tar clf - / --exclude={/mnt,/dev,/sys,/proc,/tmp,/run,/swapfile,/vagrant,/mnt} | tar -xf - -C /mnt
+mkdir /mnt/proc /mnt/dev /mnt/mnt /mnt/sys /mnt/tmp /mnt/run
+blkid /dev/md0 uuid -> /mnt/etc/fstab
+rd.auto=1 -> /mnt/etc/default/grub
+mount --bind /proc /mnt/proc
+mount --bind /sys /mnt/sys
+mount --bind /dev /mnt/dev
+chroot /mnt
+dracut --mdadmconf --force
+grub2-mkconfig -o /boot/grub2/grub.cfg
+grub2-install /dev/sdb
+grub2-install /dev/sdc
+покидаем chroot (ctrl+d)
+umount /dev/md0 - говорит что используется
+reboot
